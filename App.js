@@ -22,6 +22,22 @@ import ItineraryDetailsPage from './src/views/screens/ItineraryDetailsPage';
 import HolidayPackageScreen from './src/views/screens/HolidayPackageScreen';
 import PackageDetailScreen from './src/views/screens/PackageDetailScreen';
 import DestinationDetails from './src/views/screens/DestinationDetails';
+import HotelListScreen from './src/views/screens/HotelListScreen';
+import HotelDetailScreen from './src/views/screens/HotelDetailScreen';
+import BookingScreen from './src/views/screens/BookingScreen';
+import BookingConfirmationScreen from './src/views/screens/BookingConfirmationScreen';
+import FlightOptionsScreen from './src/views/screens/FlightOptionsScreen';
+import ProfileScreen from './src/views/screens/ProfileScreen';
+import Bookings from './src/views/screens/Bookings';
+import Settings from './src/views/screens/Settings';
+import BookingDetails from './src/views/screens/BookingDetails';
+import PreferencesScreen from './src/views/screens/PreferencesScreen';
+import ResultsScreen from './src/views/screens/ResultsScreen';
+import ItineraryScreen from './src/views/screens/ItineraryScreen';
+import FlightBooking from './src/views/screens/FlightBooking';
+import HotelBooking from './src/views/screens/HotelBooking';
+import HotelConfirmation from './src/views/screens/HotelConfirmation';
+import FlightConfirmation from './src/views/screens/FlightConfirmation';
 const Stack = createStackNavigator();
 
 const App = () => {
@@ -47,6 +63,23 @@ const App = () => {
         <Stack.Screen name="HolidayPackageScreen" component={HolidayPackageScreen} />
         <Stack.Screen name="PackageDetailScreen" component={PackageDetailScreen} />
         <Stack.Screen name="DestinationDetails" component={DestinationDetails} />
+        <Stack.Screen name="HotelListScreen" component={HotelListScreen} />
+        <Stack.Screen name="HotelDetailScreen" component={HotelDetailScreen} />
+        <Stack.Screen name="BookingScreen" component={BookingScreen} />
+        <Stack.Screen name="BookingConfirmationScreen" component={BookingConfirmationScreen} />
+        <Stack.Screen name="FlightOptionsScreen" component={FlightOptionsScreen} />
+        <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+        <Stack.Screen name="Bookings" component={Bookings} />
+        <Stack.Screen name="Settings" component={Settings} />
+        <Stack.Screen name="BookingDetails" component={BookingDetails} />
+        <Stack.Screen name="PreferencesScreen" component={PreferencesScreen} />
+        <Stack.Screen name="ResultsScreen" component={ResultsScreen} />
+        <Stack.Screen name="ItineraryScreen" component={ItineraryScreen} />
+        <Stack.Screen name="FlightBooking" component={FlightBooking} />
+        <Stack.Screen name="HotelBooking" component={HotelBooking} />
+        <Stack.Screen name="HotelConfirmation" component={HotelConfirmation} />
+        <Stack.Screen name="FlightConfirmation" component={FlightConfirmation} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );
