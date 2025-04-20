@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { IP_ADDRESS, PORT } from '@env';
 
 // Base URL for your backend API
-const BASE_URL = 'http://192.168.1.5:5000/api'; // Replace with your actual backend IP/URL
+const BASE_URL = `http://192.168.1.6:${PORT}/api`; // Replace with your actual backend IP/URL
 
 class PackageService {
   // Fetch all packages

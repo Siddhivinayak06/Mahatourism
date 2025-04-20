@@ -12,25 +12,30 @@ import {
   Dimensions,
   TouchableOpacity,
   ActivityIndicator,
-  DrawerLayoutAndroid,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import COLORS from '../../consts/colors';
 import axios from 'axios';
-import LocationDetailsScreen from './LocationDetailsScreen';
-
+import { IP_ADDRESS, PORT } from '@env';
 const { width } = Dimensions.get('screen');
-const API_BASE_URL = 'http://192.168.1.5:5000/api'; // Replace with your actual API endpoint
+const API_BASE_URL = `http://192.168.1.6:${PORT}/api`; // Replace with your actual API endpoint
 
-const HomeScreen = ({ navigation }) => {
+const HomeScreen = ({ route, navigation }) => {
   const [destinations, setDestinations] = useState([]);
   const [recommendedDestinations, setRecommendedDestinations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [drawerRef, setDrawerRef] = useState(null);
+  const { userId, userFullName, userEmail, userMobile } = route.params || {};
 
+  
+  useEffect(() => {
+    console.log("Full route object:", route);
+    console.log("Route params:", route.params);
+    console.log("userId specifically:", route.params?.userId);
+  }, []);
   useEffect(() => {
     fetchDestinations();
   }, []);
@@ -73,9 +78,14 @@ const HomeScreen = ({ navigation }) => {
   const handleHotelSearch = () => {
     navigation.navigate('HotelSearchScreen');
   };
-
+  console.log("user: ",userId);
   const handleNearMe = () => {
-    navigation.navigate('HolidayPackageScreen');
+    navigation.navigate('HolidayPackageScreen',{ 
+      userId:userId, 
+      userFullName,
+      userEmail,
+      userMobile
+    });
   };
 
   const handleLocations = () => {
@@ -89,6 +99,51 @@ const HomeScreen = ({ navigation }) => {
   const handleViewAllPlaces = () => {
     // Navigate to a screen that shows all destinations
     navigation.navigate('LocationDetailsScreen', { destinations });
+  };
+
+  const handleLogout = () => {
+    // Implement your logout logic here
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
+
+  const navigateToBookings = () => {
+    navigation.navigate('Bookings');
+  };
+
+  const navigateToProfile = () => {
+    navigation.navigate('ProfileScreen', { 
+      userId, 
+      userFullName,
+      userEmail,
+      userMobile
+    });
+  };
+
+  const navigateToSettings = () => {
+    navigation.navigate('Settings',{ 
+      userId, 
+      userFullName,
+      userEmail,
+      userMobile
+    });
+  };
+
+  const navigateToHome = () => {
+    // If already on home, could refresh or do nothing
+    // Or implement a specific behavior
+  };
+
+  // Handle AI Assistant press
+  const handleAIAssistant = () => {
+    // Navigate to AI Assistant screen or open AI chat modal
+    navigation.navigate('PreferencesScreen', { 
+      userId, 
+      userFullName 
+    });
+    // You could also implement a modal or bottom sheet here
   };
 
   const ListCategories = () => (
@@ -122,11 +177,11 @@ const HomeScreen = ({ navigation }) => {
         activeOpacity={0.8}
         onPress={() => navigation.navigate('DestinationDetails', { destination_id: destination.destination_id })}>
         <ImageBackground 
-        source={{ uri: destination.image_url }} 
-        style={style.cardImage}
-        onError={() => console.log('Error loading image:', destination.image_url)}
-        defaultSource={require('../../assets/placeholder.png')}
-      >
+          source={{ uri: destination.image_url }} 
+          style={style.cardImage}
+          onError={() => console.log('Error loading image:', destination.image_url)}
+          defaultSource={require('../../assets/placeholder.png')}
+        >
           <Text
             style={{
               color: COLORS.white,
@@ -200,150 +255,147 @@ const HomeScreen = ({ navigation }) => {
       </ImageBackground>
     );
   };
-
-  const renderSidebar = () => (
-    <View style={style.sidebarContainer}>
-      <View style={style.sidebarHeader}>
-        <Text style={style.sidebarTitle}>MahaTourism</Text>
-      </View>
-      <View style={style.sidebarContent}>
-        <TouchableOpacity style={style.sidebarItem} onPress={() => { drawerRef.closeDrawer(); navigation.navigate('HomeScreen'); }}>
-          <Icon name="home" size={24} color={COLORS.primary} />
-          <Text style={style.sidebarItemText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={style.sidebarItem} onPress={() => { drawerRef.closeDrawer(); navigation.navigate('Profile'); }}>
-          <Icon name="person" size={24} color={COLORS.primary} />
-          <Text style={style.sidebarItemText}>Profile</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={style.sidebarItem} onPress={() => { drawerRef.closeDrawer(); navigation.navigate('Bookings'); }}>
-          <Icon name="book" size={24} color={COLORS.primary} />
-          <Text style={style.sidebarItemText}>My Bookings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={style.sidebarItem} onPress={() => { drawerRef.closeDrawer(); navigation.navigate('Favorites'); }}>
-          <Icon name="favorite" size={24} color={COLORS.primary} />
-          <Text style={style.sidebarItemText}>Favorites</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={style.sidebarItem} onPress={() => { drawerRef.closeDrawer(); navigation.navigate('Settings'); }}>
-          <Icon name="settings" size={24} color={COLORS.primary} />
-          <Text style={style.sidebarItemText}>Settings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={style.sidebarItem} onPress={() => { drawerRef.closeDrawer(); /* handle logout */ }}>
-          <Icon name="logout" size={24} color={COLORS.primary} />
-          <Text style={style.sidebarItemText}>Logout</Text>
-        </TouchableOpacity>
-      </View>
+  
+  // Footer component for navigation
+  const Footer = () => (
+    <View style={style.footer}>
+      <TouchableOpacity style={style.footerItem} onPress={navigateToHome}>
+        <Icon name="home" size={24} color={COLORS.primary} />
+        <Text style={style.footerText}>Home</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={style.footerItem} onPress={navigateToBookings}>
+        <Icon name="book" size={24} color={COLORS.grey} />
+        <Text style={style.footerText}>Bookings</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={style.footerItem} onPress={navigateToProfile}>
+        <Icon name="person" size={24} color={COLORS.grey} />
+        <Text style={style.footerText}>Profile</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity style={style.footerItem} onPress={navigateToSettings}>
+        <Icon name="settings" size={24} color={COLORS.grey} />
+        <Text style={style.footerText}>Settings</Text>
+      </TouchableOpacity>
     </View>
   );
   
   return (
-    <DrawerLayoutAndroid
-      ref={ref => setDrawerRef(ref)}
-      drawerWidth={width * 0.75}
-      drawerPosition="left"
-      renderNavigationView={renderSidebar}
-    >
-      <SafeAreaView style={{flex: 1, backgroundColor: COLORS.white}}>
-        <StatusBar translucent={false} backgroundColor={COLORS.primary} />
-        <View style={style.header}>
-          <TouchableOpacity onPress={() => drawerRef.openDrawer()}>
-            <Icon name="sort" size={28} color={COLORS.white} />
-          </TouchableOpacity>
-          <Icon name="notifications-none" size={28} color={COLORS.white} />
+    <SafeAreaView style={{flex: 1, backgroundColor: COLORS.white}}>
+      <StatusBar translucent={false} backgroundColor={COLORS.primary} />
+      <View style={style.header}>
+        
+      </View>
+      {loading ? (
+        <View style={style.loadingContainer}>
+          <ActivityIndicator size={Platform.OS === 'ios' ? 'large' : 50} color={COLORS.primary} />
+          <Text style={style.loadingText}>Loading destinations...</Text>
         </View>
-        {loading ? (
-          <View style={style.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={style.loadingText}>Loading destinations...</Text>
-          </View>
-        ) : error ? (
-          <View style={style.errorContainer}>
-            <Icon name="error" size={40} color={COLORS.primary} />
-            <Text style={style.errorText}>{error}</Text>
-            <TouchableOpacity style={style.retryButton} onPress={fetchDestinations}>
-              <Text style={style.retryButtonText}>Retry</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <ScrollView showsVerticalScrollIndicator={false}>
-            <View
-              style={{
-                backgroundColor: COLORS.primary,
-                height: 120,
-                paddingHorizontal: 20,
-              }}>
-              <View style={{flex: 1}}>
-                <Text style={style.headerTitle}>MahaTourism</Text>
-                <View style={style.inputContainer}>
-                  <Icon name="search" size={28} />
-                  <TextInput
-                    placeholder="Search place"
-                    style={{color: COLORS.dark, flex: 1}}
-                    value={searchQuery}
-                    onChangeText={handleSearch}
-                  />
-                  {searchQuery ? (
-                    <TouchableOpacity onPress={() => setSearchQuery('')}>
-                      <Icon name="close" size={24} color={COLORS.grey} />
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
+      ) : error ? (
+        <View style={style.errorContainer}>
+          <Icon name="error" size={40} color={COLORS.primary} />
+          <Text style={style.errorText}>{error}</Text>
+          <TouchableOpacity style={style.retryButton} onPress={fetchDestinations}>
+            <Text style={style.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 80 }} // Increased padding to account for AI button
+        >
+          <View
+            style={{
+              backgroundColor: COLORS.primary,
+              height: 120,
+              paddingHorizontal: 20,
+            }}>
+            <View style={{flex: 1}}>
+              <Text style={style.headerTitle}>MahaTourism</Text>
+              <View style={style.inputContainer}>
+                <Icon name="search" size={28} />
+                <TextInput
+                  placeholder="Search place"
+                  style={{color: COLORS.dark, flex: 1}}
+                  value={searchQuery}
+                  onChangeText={handleSearch}
+                />
+                {searchQuery ? (
+                  <TouchableOpacity onPress={() => setSearchQuery('')}>
+                    <Icon name="close" size={24} color={COLORS.grey} />
+                  </TouchableOpacity>
+                ) : null}
               </View>
             </View>
-            <ListCategories />
-            
-            {searchQuery.trim() ? (
-              <>
-                <Text style={style.sectionTitle}>Search Results</Text>
-                {searchResults.length > 0 ? (
-                  <FlatList
-                    contentContainerStyle={{paddingLeft: 20}}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    data={searchResults}
-                    renderItem={({item}) => <Card destination={item} />}
-                    keyExtractor={item => item.destination_id.toString()}
-                  />
-                ) : (
-                  <Text style={style.noResultsText}>No destinations found matching "{searchQuery}"</Text>
-                )}
-              </>
-            ) : (
-              <>
-                <View style={style.sectionTitleContainer}>
-                  <Text style={style.sectionTitle}>Places</Text>
-                  <TouchableOpacity onPress={handleViewAllPlaces}>
-                    <View style={style.moreButtonContainer}>
-                      <Text style={style.moreButtonText}>More</Text>
-                      <Icon name="arrow-forward" size={16} color={COLORS.primary} />
-                    </View>
-                  </TouchableOpacity>
-                </View>
-                <View>
-                  <FlatList
-                    contentContainerStyle={{paddingLeft: 20}}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    data={destinations}
-                    keyExtractor={(item) => item.destination_id.toString()}
-                    renderItem={({ item }) => <Card destination={item} />}
-                  />
-                  <Text style={style.sectionTitle}>Recommended</Text>
-                  <FlatList
-                    snapToInterval={width - 20}
-                    contentContainerStyle={{paddingLeft: 20, paddingBottom: 20}}
-                    showsHorizontalScrollIndicator={false}
-                    horizontal
-                    data={recommendedDestinations}
-                    renderItem={({item}) => <RecommendedCard destination={item} />}
-                    keyExtractor={item => item.destination_id.toString()}
-                  />
-                </View>
-              </>
-            )}
-          </ScrollView>
-        )}
-      </SafeAreaView>
-    </DrawerLayoutAndroid>
+          </View>
+          <ListCategories />
+          
+          {searchQuery.trim() ? (
+            <>
+              <Text style={style.sectionTitle}>Search Results</Text>
+              {searchResults.length > 0 ? (
+                <FlatList
+                  contentContainerStyle={{paddingLeft: 20}}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  data={searchResults}
+                  renderItem={({item}) => <Card destination={item} />}
+                  keyExtractor={item => item.destination_id.toString()}
+                />
+              ) : (
+                <Text style={style.noResultsText}>No destinations found matching "{searchQuery}"</Text>
+              )}
+            </>
+          ) : (
+            <>
+              <View style={style.sectionTitleContainer}>
+                <Text style={style.sectionTitle}>Places</Text>
+                <TouchableOpacity onPress={handleViewAllPlaces}>
+                  <View style={style.moreButtonContainer}>
+                    <Text style={style.moreButtonText}>More</Text>
+                    <Icon name="arrow-forward" size={16} color={COLORS.primary} />
+                  </View>
+                </TouchableOpacity>
+              </View>
+              <View>
+                <FlatList
+                  contentContainerStyle={{paddingLeft: 20}}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  data={destinations}
+                  keyExtractor={(item) => item.destination_id.toString()}
+                  renderItem={({ item }) => <Card destination={item} />}
+                />
+                <Text style={style.sectionTitle}>Recommended</Text>
+                <FlatList
+                  snapToInterval={width - 20}
+                  contentContainerStyle={{paddingLeft: 20, paddingBottom: 20}}
+                  showsHorizontalScrollIndicator={false}
+                  horizontal
+                  data={recommendedDestinations}
+                  renderItem={({item}) => <RecommendedCard destination={item} />}
+                  keyExtractor={item => item.destination_id.toString()}
+                />
+              </View>
+            </>
+          )}
+        </ScrollView>
+      )}
+      
+      {/* AI Assistant Icon Button */}
+      <TouchableOpacity 
+        style={style.aiButton}
+        activeOpacity={0.8}
+        onPress={handleAIAssistant}
+      >
+        <View style={style.aiIconContainer}>
+          <Icon name="assistant" size={28} color={COLORS.white} />
+        </View>
+      </TouchableOpacity>
+      
+      <Footer />
+    </SafeAreaView>
   );
 };
 
@@ -353,7 +405,13 @@ const style = StyleSheet.create({
     paddingHorizontal: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: COLORS.primary,
+  },
+  headerTitleSmall: {
+    color: COLORS.white,
+    fontWeight: 'bold',
+    fontSize: 22,
   },
   headerTitle: {
     color: COLORS.white,
@@ -464,34 +522,54 @@ const style = StyleSheet.create({
     color: COLORS.dark,
     fontStyle: 'italic',
   },
-  sidebarContainer: {
-    flex: 1,
-    backgroundColor: COLORS.white,
+  // AI Assistant button styles
+  aiButton: {
+    position: 'absolute',
+    bottom: 70, // Position it just above the footer
+    right: 20,
+    zIndex: 999,
   },
-  sidebarHeader: {
-    padding: 20,
+  aiIconContainer: {
+    height: 56,
+    width: 56,
     backgroundColor: COLORS.primary,
+    justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 28, // Make it circular
+    elevation: 8, // Add shadow for Android
+    shadowColor: '#000', // Shadow for iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
-  sidebarTitle: {
-    color: COLORS.white,
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  sidebarContent: {
-    padding: 20,
-  },
-  sidebarItem: {
+  // Footer styles
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: COLORS.white,
+    height: 60,
     flexDirection: 'row',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingVertical: 5,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
-  sidebarItemText: {
-    marginLeft: 15,
-    fontSize: 16,
-    color: COLORS.dark,
+  footerItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  footerText: {
+    fontSize: 12,
+    marginTop: 2,
+    color: COLORS.grey,
   },
 });
 

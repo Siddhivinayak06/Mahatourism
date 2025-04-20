@@ -3,8 +3,9 @@ import { View, StyleSheet, FlatList, TouchableOpacity, Text, ImageBackground, Ac
 import COLORS from '../../consts/colors';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import axios from 'axios';
+import { IP_ADDRESS, PORT } from '@env';
 
-const API_BASE_URL = 'http://192.168.1.5:5000/api'; // Replace with your actual API endpoint
+const API_BASE_URL = `http://192.168.1.5:${PORT}/api`; // Replace with your actual API endpoint
 
 const LocationDetailsScreen = ({ route, navigation }) => {
   const [destinations, setDestinations] = useState([]);
@@ -55,7 +56,7 @@ const LocationDetailsScreen = ({ route, navigation }) => {
             <View style={styles.feeContainer}>
               <Text style={styles.feeText}>
                 {destination.entry_fee > 0 
-                  ? `$${parseFloat(destination.entry_fee).toFixed(2)}` 
+                  ? `₹${parseFloat(destination.entry_fee).toFixed(2)}` 
                   : 'Free Entry'}
               </Text>
             </View>

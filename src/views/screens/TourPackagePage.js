@@ -13,9 +13,11 @@ import {
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
+import { IP_ADDRESS, PORT } from '@env';
+
 
 // Replace with your actual API endpoint
-const API_URL = 'https://localhost:5000/api/itinerary';
+const API_URL = `http://192.168.1.5:${PORT}`;
 
 // Helper function to get icon for category
 const getCategoryIcon = (category) => {
@@ -57,7 +59,7 @@ const TourPackagePage = () => {
   const fetchItinerary = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://192.168.1.5:5000/api/itinerary', {
+      const response = await axios.get(`http://192.168.1.5:${PORT}/api/itinerary`, {
         timeout: 10000, // 10 seconds
       });
       if (response.data) {

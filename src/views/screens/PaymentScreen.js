@@ -1,311 +1,432 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, TextInput } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  TextInput, 
+  Alert,
+  ActivityIndicator,
+  Image 
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useNavigation } from '@react-navigation/native';
+import axios from "axios";
+import { IP_ADDRESS, PORT } from '@env';
 
-const PaymentScreen = () => {
+const PaymentScreen = ({ route }) => {
   const navigation = useNavigation();
-  const route = useRoute();
-  const [paymentStatus, setPaymentStatus] = useState('pending');
+  const { 
+    bookingDetails, 
+    flightDetails, 
+    amount, 
+    seatType, 
+    departureDate, 
+    passengers, 
+    tripType,
+    departureTime,
+    arrivalTime,
+    duration
+  } = route.params;
+
   const [email, setEmail] = useState('');
-  const [emailError, setEmailError] = useState('');
+  const [userId, setUserId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card', 'upi', 'netbanking'
+  const [cardNumber, setCardNumber] = useState('');
+  const [cardName, setCardName] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
-  // Debugging logs
-  console.log('Payment Screen Route Params:', route.params);
-  console.log('Amount Received:', route.params?.amount);
-  console.log('Flight Details:', route.params?.flightDetails);
-  console.log('Passengers:', route.params?.passengers);
-
-  // Generate a random transaction ID
-  const transactionId = 'TXN' + Math.random().toString(36).substr(2, 9).toUpperCase();
-
-  // Email validation function
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const validateFlightDetails = () => {
-    try {
-      const flightDetails = route.params?.flightDetails;
-      if (!flightDetails) {
-        throw new Error('No flight details found');
+  useEffect(()=>{
+    console.log('Received in PaymentScreen:', route.params);
+  },[]);
+  // Fetch user ID from AsyncStorage on component mount
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const storedUserId = await AsyncStorage.getItem('userId');
+        if (storedUserId) {
+          setUserId(storedUserId);
+        } else {
+          // If userId is not in storage, navigate back or show error
+          Alert.alert(
+            "Authentication Required",
+            "Please login to continue with booking.",
+            [
+              { 
+                text: "OK", 
+                onPress: () => navigation.navigate('Login', { 
+                  returnTo: 'FlightDetailsScreen',
+                  flightDetails,
+                  seatType,
+                  departureDate,
+                  passengers,
+                  tripType,
+                  departureTime,
+                  arrivalTime,
+                  duration,
+                  amount
+                }) 
+              }
+            ]
+          );
+        }
+      } catch (error) {
+        console.error('Error fetching user ID:', error);
       }
+    };
 
-      // Validate flight object structure
-      if (!flightDetails.flight || typeof flightDetails.flight !== 'object' ||
-          !flightDetails.airline || typeof flightDetails.airline !== 'object' ||
-          !flightDetails.departure || typeof flightDetails.departure !== 'object' ||
-          !flightDetails.arrival || typeof flightDetails.arrival !== 'object') {
-        throw new Error('Invalid flight data structure');
-      }
+    fetchUserId();
+  }, []);
 
-      const requiredFields = {
-        'Flight Number': flightDetails.flight?.number,
-        'Airline': flightDetails.airline?.name,
-        'Departure Airport': flightDetails.departure?.airport,
-        'Departure Code': flightDetails.departure?.iata,
-        'Arrival Airport': flightDetails.arrival?.airport,
-        'Arrival Code': flightDetails.arrival?.iata,
-      };
+  // Validate the form based on selected payment method
+  const validateForm = () => {
+    const errors = {};
 
-
-    const missingFields = Object.entries(requiredFields)
-      .filter(([_, value]) => !value)
-      .map(([key]) => key);
-
-    if (missingFields.length > 0) {
-      throw new Error(`Missing flight details: ${missingFields.join(', ')}`);
+    if (!email) {
+      errors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      errors.email = 'Email is invalid';
     }
 
-    return true;
-    } catch (error) {
-      Alert.alert(
-        'Validation Error',
-        error.message + '. Please try booking again.'
-      );
-      return false;
-    }
-
-  };
-
-
-
-  // Function to send email
-  const sendTicketEmail = async (bookingDetails) => {
-    try {
-      // Validate booking details before sending
-      if (!bookingDetails.flightNumber || !bookingDetails.airline || 
-          !bookingDetails.departure || !bookingDetails.arrival) {
-        throw new Error('Incomplete booking details');
+    if (paymentMethod === 'card') {
+      if (!cardNumber) {
+        errors.cardNumber = 'Card number is required';
+      } else if (cardNumber.replace(/\s/g, '').length !== 16) {
+        errors.cardNumber = 'Card number must be 16 digits';
       }
 
-      // In a real app, you would integrate with your backend email service here
-      const response = await fetch('/api/send-confirmation-email', {
-
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: bookingDetails.email,
-          subject: `Flight Booking Confirmation - ${bookingDetails.flightNumber}`,
-          booking: bookingDetails,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send email');
+      if (!cardName) {
+        errors.cardName = 'Cardholder name is required';
       }
 
-      return await response.json();
-    } catch (error) {
-      console.error('Error sending email:', error);
-      throw error;
+      if (!expiryDate) {
+        errors.expiryDate = 'Expiry date is required';
+      } else if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(expiryDate)) {
+        errors.expiryDate = 'Expiry date must be in MM/YY format';
+      }
+
+      if (!cvv) {
+        errors.cvv = 'CVV is required';
+      } else if (!/^\d{3,4}$/.test(cvv)) {
+        errors.cvv = 'CVV must be 3 or 4 digits';
+      }
+    } else if (paymentMethod === 'upi') {
+      if (!upiId) {
+        errors.upiId = 'UPI ID is required';
+      } else if (!/^[\w.-]+@[\w.-]+$/.test(upiId)) {
+        errors.upiId = 'Invalid UPI ID format';
+      }
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Format card number with spaces
+  const formatCardNumber = (value) => {
+    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    const matches = v.match(/\d{4,16}/g);
+    const match = matches && matches[0] || '';
+    const parts = [];
+
+    for (let i = 0; i < match.length; i += 4) {
+      parts.push(match.substring(i, i + 4));
+    }
+
+    if (parts.length) {
+      return parts.join(' ');
+    } else {
+      return value;
     }
   };
 
-  const handleViewDetails = () => {
-    if (!validateFlightDetails()) {
+  // Handle form submission
+  const handlePayment = async () => {
+    if (!validateForm()) {
       return;
     }
-    navigation.navigate('FlightDetailsScreen', {
-      flightDetails: route.params?.flightDetails
-    });
-  };
-
-  const handleConfirmPayment = async () => {
+  
+    setLoading(true);
+  
     try {
-      // Validate email
-      if (!email) {
-        setEmailError('Please enter your email address');
-        return;
-      }
-      if (!validateEmail(email)) {
-        setEmailError('Please enter a valid email address');
-        return;
-      }
-
-      // Validate flight details
-      if (!validateFlightDetails()) {
-        Alert.alert('Error', 'Invalid flight details. Please try booking again.');
-        return;
-      }
-
-      // Validate amount
-      if (!route.params?.amount || isNaN(route.params.amount)) {
-        Alert.alert('Error', 'Invalid payment amount. Please try again.');
-        return;
-      }
-
-
-      const flightDetails = route.params?.flightDetails;
-
-      // Create booking object with null checks
-      const booking = {
-        flightNumber: flightDetails?.flight?.number,
-        airline: flightDetails?.airline?.name,
-        departure: flightDetails?.departure?.airport 
-          ? `${flightDetails.departure.airport} (${flightDetails.departure.iata})`
-          : null,
-        arrival: flightDetails?.arrival?.airport 
-          ? `${flightDetails.arrival.airport} (${flightDetails.arrival.iata})`
-          : null,
-        passengers: route.params?.passengers || [],
-        amount: route.params?.amount,
-        date: new Date().toLocaleDateString(),
+      // Generate a unique transaction ID
+      const transactionId = `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
+      
+      // Prepare data for API call - match expected backend property names
+      const bookingData = {
+        userId: userId,
+        flightNumber: bookingDetails.flight_number,
+        airline: bookingDetails.airline,
+        departureAirport: bookingDetails.departure_airport,
+        departureCode: bookingDetails.departure_code,
+        arrivalAirport: bookingDetails.arrival_airport,
+        arrivalCode: bookingDetails.arrival_code,
+        departureTime: formatDateTimeForDb(departureDate, departureTime || '09:00'),
+        arrivalTime: formatDateTimeForDb(departureDate, arrivalTime || '11:30'),
+        passengers: JSON.stringify(bookingDetails.passengers),
+        amount: amount,
+        bookingDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
         email: email,
-        transactionId: transactionId
+        transactionId: transactionId,
+        paymentStatus: 'completed'
       };
-
-      // Validate booking object
-      const missingFields = Object.entries(booking)
-        .filter(([key, value]) => !value && key !== 'passengers')
-        .map(([key]) => key);
-
-      if (missingFields.length > 0) {
-        throw new Error(`Missing required booking information: ${missingFields.join(', ')}`);
-      }
-
-      // Update payment status
-      setPaymentStatus('completed');
-
-      // Save booking
-      try {
-        const storedBookings = await AsyncStorage.getItem('bookings');
-        const bookings = storedBookings ? JSON.parse(storedBookings) : [];
-        if (!Array.isArray(bookings)) {
-          throw new Error('Invalid bookings data');
-        }
-        bookings.push(booking);
-        await AsyncStorage.setItem('bookings', JSON.stringify(bookings));
-      } catch (storageError) {
-        console.error('Error saving booking:', storageError);
-        throw new Error('Failed to save booking. Please try again.');
-      }
-
-      // Send email
-      try {
-        await sendTicketEmail(booking);
-      } catch (emailError) {
-        console.error('Error sending email:', emailError);
-        throw new Error('Failed to send confirmation email. Your booking was successful but the email could not be sent.');
-      }
-
-
-      Alert.alert(
-        'Booking Confirmed',
-        'Your ticket has been successfully booked and sent to your email!',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('BookingsScreen')
-          }
-        ]
-      );
+      
+      console.log('Sending booking data:', bookingData);
+      
+      // Make the actual API call - check if your backend URL is correct
+      const response = await axios.post('http://192.168.1.6:5000/save-booking', bookingData);
+      
+      console.log('API response:', response.data);
+      
+      setLoading(false);
+      
+      // Navigate to success screen
+      navigation.navigate('FlightConfirmation', {
+        bookingDetails: bookingData,
+        transactionId,
+        flightDetails
+      });
+      
     } catch (error) {
-      console.error('Error processing booking:', error);
+      setLoading(false);
+      console.error('Payment error:', error);
       Alert.alert(
-        'Error',
-        error.message || 'Failed to process booking. Please try again.'
+        "Payment Error",
+        `There was an error processing your payment: ${error.message}`,
+        [{ text: "OK" }]
       );
-      setPaymentStatus('failed');
     }
   };
+  // Format date and time for database storage
+  const formatDateTimeForDb = (date, time) => {
+    if (!date || !time) return null;
+    
+    // Format depends on how your date is stored
+    // Assuming date format is DD/MM/YYYY
+    const [day, month, year] = date.split('/');
+    const [hours, minutes] = time.split(':');
+    
+    // Create a date object in YYYY-MM-DD HH:MM:SS format for MySQL
+    return `${year}-${month}-${day} ${hours}:${minutes}:00`;
+  };
 
-  // Rest of the component remains the same...
   return (
     <View style={styles.container}>
       <ScrollView>
-        <Text style={styles.header}>Payment Details</Text>
-
-        <View style={styles.qrContainer}>
-          <Image
-            source={{ uri: 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=anoojshete@okaxis&pn=FlightBooking&am=' + (route.params?.amount || '0') + '&tn=' + transactionId }}
-            style={styles.qrCode}
-          />
-          <Text style={styles.scanText}>Scan QR code to pay</Text>
+        <View style={styles.headerSection}>
+          <TouchableOpacity 
+            style={styles.backButtonWrapper}
+            onPress={() => navigation.goBack()}
+          >
+            <Image 
+              source={require('../../assets/icons/backbutton.png')}
+              style={styles.backButtonImage}
+            />
+          </TouchableOpacity>
+          <Text style={styles.header}>Payment</Text>
         </View>
 
-        <View style={styles.emailContainer}>
-          <Text style={styles.cardHeader}>Email Address</Text>
-          <TextInput
-            style={styles.emailInput}
-            placeholder="Enter your email address"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              setEmailError('');
-            }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
-        </View>
-
-        <View style={styles.detailsCard}>
-          <Text style={styles.cardHeader}>Transaction Details</Text>
+        <View style={styles.flightSummary}>
+          <Text style={styles.summaryTitle}>Booking Summary</Text>
           
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Transaction ID:</Text>
-            <Text style={styles.value}>{transactionId}</Text>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Flight</Text>
+            <Text style={styles.summaryValue}>{bookingDetails.airline} {bookingDetails.flight_number}</Text>
           </View>
-
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Amount:</Text>
-            <Text style={styles.value}>₹{route.params?.amount || '0'}</Text>
+          
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Route</Text>
+            <Text style={styles.summaryValue}>{bookingDetails.departure_code} → {bookingDetails.arrival_code}</Text>
           </View>
-
-          <View style={styles.detailRow}>
-            <Text style={styles.label}>Payment Status:</Text>
-            <Text style={[styles.value, styles[paymentStatus]]}>
-              {paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
-            </Text>
+          
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Date</Text>
+            <Text style={styles.summaryValue}>{departureDate}</Text>
+          </View>
+          
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Passengers</Text>
+            <Text style={styles.summaryValue}>{passengers}</Text>
+          </View>
+          
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Seat Type</Text>
+            <Text style={styles.summaryValue}>{seatType}</Text>
+          </View>
+          
+          <View style={styles.totalAmount}>
+            <Text style={styles.totalLabel}>Total Amount</Text>
+            <Text style={styles.totalValue}>₹{amount}</Text>
           </View>
         </View>
 
-        {/* Rest of the existing cards... */}
-        <View style={styles.instructionsCard}>
-          <Text style={styles.cardHeader}>Payment Instructions</Text>
-          <Text style={styles.instruction}>1. Open your UPI payment app</Text>
-          <Text style={styles.instruction}>2. Scan the QR code above</Text>
-          <Text style={styles.instruction}>3. Enter your UPI PIN to confirm payment</Text>
-          <Text style={styles.instruction}>4. Ensure payment is made to: anoojshete@okaxis</Text>
-          <Text style={styles.instruction}>5. Wait for payment confirmation</Text>
+        <View style={styles.formSection}>
+          <Text style={styles.sectionTitle}>Contact Information</Text>
+          
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={[styles.input, formErrors.email && styles.inputError]}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            {formErrors.email && <Text style={styles.errorText}>{formErrors.email}</Text>}
+          </View>
         </View>
 
-        <View style={styles.supportCard}>
-          <Text style={styles.cardHeader}>Need Help?</Text>
-          <Text style={styles.supportText}>Contact our support team:</Text>
-          <Text style={styles.supportEmail}>support@mahatourism.com</Text>
-          <Text style={styles.supportPhone}>+91 1800-123-4567</Text>
+        <View style={styles.formSection}>
+          <Text style={styles.sectionTitle}>Payment Method</Text>
+          
+          <View style={styles.paymentOptions}>
+            <TouchableOpacity 
+              style={[styles.paymentOption, paymentMethod === 'card' && styles.selectedPayment]}
+              onPress={() => setPaymentMethod('card')}
+            >
+              <Text style={styles.paymentOptionText}>Credit/Debit Card</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.paymentOption, paymentMethod === 'upi' && styles.selectedPayment]}
+              onPress={() => setPaymentMethod('upi')}
+            >
+              <Text style={styles.paymentOptionText}>UPI</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.paymentOption, paymentMethod === 'netbanking' && styles.selectedPayment]}
+              onPress={() => setPaymentMethod('netbanking')}
+            >
+              <Text style={styles.paymentOptionText}>Net Banking</Text>
+            </TouchableOpacity>
+          </View>
+
+          {paymentMethod === 'card' && (
+            <View style={styles.cardForm}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Card Number</Text>
+                <TextInput
+                  style={[styles.input, formErrors.cardNumber && styles.inputError]}
+                  value={cardNumber}
+                  onChangeText={(text) => setCardNumber(formatCardNumber(text))}
+                  placeholder="XXXX XXXX XXXX XXXX"
+                  keyboardType="numeric"
+                  maxLength={19} // 16 digits + 3 spaces
+                />
+                {formErrors.cardNumber && <Text style={styles.errorText}>{formErrors.cardNumber}</Text>}
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Cardholder Name</Text>
+                <TextInput
+                  style={[styles.input, formErrors.cardName && styles.inputError]}
+                  value={cardName}
+                  onChangeText={setCardName}
+                  placeholder="Enter name as on card"
+                  autoCapitalize="words"
+                />
+                {formErrors.cardName && <Text style={styles.errorText}>{formErrors.cardName}</Text>}
+              </View>
+
+              <View style={styles.rowContainer}>
+                <View style={[styles.inputContainer, { flex: 1, marginRight: 10 }]}>
+                  <Text style={styles.label}>Expiry Date</Text>
+                  <TextInput
+                    style={[styles.input, formErrors.expiryDate && styles.inputError]}
+                    value={expiryDate}
+                    onChangeText={setExpiryDate}
+                    placeholder="MM/YY"
+                    keyboardType="numeric"
+                    maxLength={5}
+                  />
+                  {formErrors.expiryDate && <Text style={styles.errorText}>{formErrors.expiryDate}</Text>}
+                </View>
+
+                <View style={[styles.inputContainer, { flex: 1 }]}>
+                  <Text style={styles.label}>CVV</Text>
+                  <TextInput
+                    style={[styles.input, formErrors.cvv && styles.inputError]}
+                    value={cvv}
+                    onChangeText={setCvv}
+                    placeholder="XXX"
+                    keyboardType="numeric"
+                    maxLength={4}
+                    secureTextEntry
+                  />
+                  {formErrors.cvv && <Text style={styles.errorText}>{formErrors.cvv}</Text>}
+                </View>
+              </View>
+            </View>
+          )}
+
+          {paymentMethod === 'upi' && (
+            <View style={styles.upiForm}>
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>UPI ID</Text>
+                <TextInput
+                  style={[styles.input, formErrors.upiId && styles.inputError]}
+                  value={upiId}
+                  onChangeText={setUpiId}
+                  placeholder="yourname@upi"
+                  autoCapitalize="none"
+                />
+                {formErrors.upiId && <Text style={styles.errorText}>{formErrors.upiId}</Text>}
+              </View>
+            </View>
+          )}
+
+          {paymentMethod === 'netbanking' && (
+            <View style={styles.netbankingForm}>
+              <Text style={styles.infoText}>Select your bank from the list below</Text>
+              
+              {/* Sample bank list - you would expand this in a real app */}
+              <TouchableOpacity style={styles.bankOption}>
+                <Text style={styles.bankName}>State Bank of India</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.bankOption}>
+                <Text style={styles.bankName}>HDFC Bank</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.bankOption}>
+                <Text style={styles.bankName}>ICICI Bank</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.bankOption}>
+                <Text style={styles.bankName}>Axis Bank</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.termsSection}>
+          <Text style={styles.termsText}>
+            By proceeding with payment, you agree to our Terms of Service and Privacy Policy.
+          </Text>
         </View>
       </ScrollView>
 
-  <View style={styles.buttonContainer}>
-    <TouchableOpacity 
-      style={styles.viewDetailsButton}
-      onPress={handleViewDetails}
-    >
-      <Text style={styles.buttonText}>View Details</Text>
-    </TouchableOpacity>
-
-    <TouchableOpacity 
-      style={styles.cancelButton}
-      onPress={() => navigation.goBack()}
-    >
-      <Text style={styles.buttonText}>Cancel</Text>
-    </TouchableOpacity>
-
-    <TouchableOpacity 
-      style={styles.confirmButton}
-      onPress={handleConfirmPayment}
-    >
-      <Text style={styles.buttonText}>Confirm Payment</Text>
-    </TouchableOpacity>
-
-  </View>
-  </View>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={styles.payButton}
+          onPress={handlePayment}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={styles.buttonText}>Pay ₹{amount}</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
@@ -314,193 +435,196 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  header: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginVertical: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
-  // Add new styles for email input
-  emailContainer: {
+  headerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
     backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  backButtonWrapper: {
+    padding: 5,
+  },
+  backButtonImage: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+  header: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginLeft: 15,
+  },
+  flightSummary: {
+    backgroundColor: '#fff',
+    padding: 15,
     margin: 15,
-    padding: 20,
-    borderRadius: 15,
+    borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  emailInput: {
+  summaryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  summaryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  summaryLabel: {
+    color: '#666',
+    fontSize: 14,
+  },
+  summaryValue: {
+    fontWeight: '500',
+    fontSize: 14,
+  },
+  totalAmount: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  totalValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#F75D37',
+  },
+  formSection: {
+    backgroundColor: '#fff',
+    padding: 15,
+    margin: 15,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  inputContainer: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 8,
+  },
+  input: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#333',
+    backgroundColor: '#fafafa',
+  },
+  inputError: {
+    borderColor: '#F75D37',
   },
   errorText: {
-    color: '#dc3545',
-    fontSize: 14,
+    color: '#F75D37',
+    fontSize: 12,
     marginTop: 5,
   },
-  container: {
+  paymentOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  paymentOption: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginVertical: 20,
-    textAlign: 'center',
-    color: '#333',
-  },
-  qrContainer: {
+    padding: 12,
     alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 20,
-    margin: 15,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginHorizontal: 5,
   },
-  qrCode: {
-    width: 200,
-    height: 200,
-    marginBottom: 10,
+  selectedPayment: {
+    borderColor: '#F75D37',
+    backgroundColor: '#e6f0ff',
   },
-  scanText: {
-    fontSize: 16,
-    color: '#666',
+  paymentOptionText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  cardForm: {
     marginTop: 10,
   },
-  detailsCard: {
-    backgroundColor: '#fff',
-    margin: 15,
-    padding: 20,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+  upiForm: {
+    marginTop: 10,
   },
-  cardHeader: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
+  netbankingForm: {
+    marginTop: 10,
   },
-  detailRow: {
+  rowContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  bankOption: {
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
     marginBottom: 10,
   },
-  label: {
+  bankName: {
     fontSize: 16,
+  },
+  infoText: {
     color: '#666',
+    marginBottom: 15,
+    fontSize: 14,
   },
-  value: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
+  termsSection: {
+    padding: 15,
+    marginHorizontal: 15,
+    marginBottom: 80, // Extra space for the floating button
   },
-  instructionsCard: {
-    backgroundColor: '#fff',
-    margin: 15,
-    padding: 20,
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  instruction: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 10,
-    paddingLeft: 10,
-  },
-  supportCard: {
-    backgroundColor: '#fff',
-    margin: 15,
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 80,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  supportText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 5,
-  },
-  supportEmail: {
-    fontSize: 16,
-    color: '#FF671F',
-    marginBottom: 5,
-  },
-  supportPhone: {
-    fontSize: 16,
-    color: '#FF671F',
+  termsText: {
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center',
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 15,
-    backgroundColor: '#fff',
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    padding: 15,
+    backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#eee',
   },
-  cancelButton: {
-    backgroundColor: '#ccc',
-    padding: 15,
+  payButton: {
+    backgroundColor: '#F75D37',
     borderRadius: 8,
-    flex: 1,
-    marginRight: 10,
-  },
-  viewDetailsButton: {
-    backgroundColor: '#4CAF50',
     padding: 15,
-    borderRadius: 8,
-    flex: 1,
-    marginRight: 10,
+    alignItems: 'center',
   },
-  confirmButton: {
-    backgroundColor: '#FF671F',
-    padding: 15,
-    borderRadius: 8,
-    flex: 2,
-  },
-
   buttonText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  pending: {
-    color: '#ffc107',
-  },
-  completed: {
-    color: '#28a745',
-  },
-  failed: {
-    color: '#dc3545',
-  },
+  }
 });
 
 export default PaymentScreen;

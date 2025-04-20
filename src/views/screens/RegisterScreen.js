@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
 import axios from 'axios'; // Import axios for API calls
+import { IP_ADDRESS, PORT } from '@env';
 
 const RegisterScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
@@ -26,7 +27,7 @@ const RegisterScreen = ({ navigation }) => {
 
     try {
       // my device: 192.168.193.247
-      const response = await axios.post('http://192.168.1.4:5000/api/register', {
+      const response = await axios.post(`http://192.168.1.6:${PORT}/api/register`, {
         firstName,
         lastName,
         email,

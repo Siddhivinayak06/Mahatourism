@@ -12,7 +12,9 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import COLORS from '../../consts/colors';
 import axios from 'axios';
-const BASE_URL = 'http://192.168.1.5:5000/api';
+import { IP_ADDRESS, PORT } from '@env';
+
+const BASE_URL = `http://192.168.1.5:${PORT}/api`;
 const DestinationDetails = ({ route, navigation }) => {
   const [destination, setDestination] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -106,7 +108,7 @@ const DestinationDetails = ({ route, navigation }) => {
           {destination.entry_fee ? (
             <View style={styles.feeContainer}>
               <Text style={styles.feeText}>
-                ${parseFloat(destination.entry_fee).toFixed(2)}
+              ₹{parseFloat(destination.entry_fee).toFixed(2)}
               </Text>
             </View>
           ) : null}

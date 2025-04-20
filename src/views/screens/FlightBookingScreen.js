@@ -30,7 +30,7 @@ const FlightBookingScreen = () => {
 
   const fetchAirports = async () => {
     try {
-      const response = await axios.get('http://192.168.1.4:5000/api/airports');
+      const response = await axios.get('http://192.168.1.6:5000/api/airports');
       setPopularCities(response.data);
     } catch (error) {
       console.error('Error fetching airport data:', error);

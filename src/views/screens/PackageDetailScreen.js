@@ -15,12 +15,14 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRoute } from '@react-navigation/native';
 import axios from 'axios';
+import { useNavigation } from '@react-navigation/native';
+import { IP_ADDRESS, PORT } from '@env';
 
 // Get window dimensions
 const { width } = Dimensions.get('window');
 
 // Base API URL - replace with your actual backend URL
-const BASE_API_URL = 'http://192.168.1.5:5000/api';
+const BASE_API_URL = `http://192.168.1.6:${PORT}/api`;
 
 const ItineraryDay = ({ day, isExpanded, onToggle }) => {
   // Ensure day.activities is an array
@@ -218,7 +220,7 @@ const fetchPackageDetails = async (packageId) => {
 
 const PackageDetailScreen = () => {
   const route = useRoute();
-  const { packageId } = route.params || {};
+  const { packageId, userId, userFullName, userEmail, userMobile} = route.params || {};
   const [packageDetails, setPackageDetails] = useState({
     images: [],
     inclusions: [],
@@ -240,7 +242,10 @@ const PackageDetailScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedDayIndex, setExpandedDayIndex] = useState(0);
-
+  const navigation = useNavigation();
+  useEffect(() => {
+    console.log("PackageDetailScreen received params:", route.params);
+  }, []);
   const loadPackageDetails = async () => {
     if (!packageId) {
       setError('Package ID is missing');
@@ -346,7 +351,7 @@ const PackageDetailScreen = () => {
             </Text>
             
             <TouchableOpacity style={styles.bookNowButton}>
-              <Text style={styles.bookNowText}>Book Now</Text>
+              <Text style={styles.bookNowText} onPress={() => navigation.navigate('BookingScreen', { packageId, userId, userFullName,userEmail,userMobile  },{ packageDetails: packageDetails })} >Book Now</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -455,7 +460,7 @@ const PackageDetailScreen = () => {
         
         <View style={styles.footerContainer}>
           <TouchableOpacity style={styles.fullWidthButton}>
-            <Text style={styles.fullWidthButtonText}>Book This Package</Text>
+            <Text style={styles.fullWidthButtonText}  onPress={() => navigation.navigate('BookingScreen', { packageId: packageId },{ packageDetails: packageDetails })}>Book This Package</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

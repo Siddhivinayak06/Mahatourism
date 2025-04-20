@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { IP_ADDRESS, PORT } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// console.log(IP_ADDRESS, PORT);
+
 import { 
   StyleSheet, 
   Text, 
@@ -55,18 +60,40 @@ const LoginScreen = ({ navigation }) => {
 
   const [showPassword, setShowPassword] = useState(false);
 
+  // Function to store user data in AsyncStorage
+  const storeUserData = async (userData) => {
+    try {
+      await AsyncStorage.setItem('userId', userData.id.toString());
+      await AsyncStorage.setItem('userFullName', userData.fullName);
+      await AsyncStorage.setItem('userEmail', userData.email);
+      await AsyncStorage.setItem('userMobile', userData.mobileNumber);
+      console.log('User data stored successfully');
+    } catch (error) {
+      console.error('Error storing user data:', error);
+    }
+  };
+
   const handleLogin = async () => {
     try {
-      // my device - 192.168.193.247
-      // 192.168.64.247
-      const response = await axios.post('http://192.168.1.5:5000/api/login', {
+      const response = await axios.post(`http://192.168.1.6:${PORT}/api/login`, {
         mobileNumber,
         password,
       });
-      // Handle successful login (e.g., navigate to HomeScreen)
-      navigation.navigate('HomeScreen');
+      const userData = response.data.user;
+      
+      // Store user data in AsyncStorage
+      await storeUserData(userData);
+      
+      // Navigate to HomeScreen with all user data
+      navigation.navigate('HomeScreen', { 
+        userId: userData.id, 
+        userFullName: userData.fullName,
+        userEmail: userData.email,
+        userMobile: userData.mobileNumber
+      });
     } catch (error) {
       setErrorMessage('Invalid mobile number or password');
+      console.error('Login error:', error);
       
       // dummy login
       // navigation.navigate('HomeScreen');
@@ -134,6 +161,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  introText: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#FF671F',
   },
   errorText: {
     color: 'red',
@@ -207,6 +239,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  googleButtonText: {
+    color: '#000',
+    fontSize: 16,
   },
   linkContainer: {
     flexDirection: 'row',

@@ -14,12 +14,15 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { usePackageAPI } from './PackageService';
 
-const HolidayPackagesScreen = () => {
+const HolidayPackagesScreen = ({route}) => {
+  const { userId, userFullName, userEmail, userMobile } = route.params || {};
   const [packages, setPackages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigation = useNavigation();
-
+  useEffect(() => {
+    console.log("HolidayPackageScreen received params:", route.params);
+  }, []);
   const { getAllPackages } = usePackageAPI();
   const fetchPackages = async () => {
     try {
@@ -47,9 +50,13 @@ const HolidayPackagesScreen = () => {
 
     fetchPackages();
   }, []);
-
+  console.log("user: ",userId);
   const handlePackagePress = (packageItem) => {
-    navigation.navigate('PackageDetailScreen', { packageId: packageItem.id });
+    navigation.navigate('PackageDetailScreen', { packageId: packageItem.id,
+      userId, 
+      userFullName,
+      userEmail,
+      userMobile });
   };
 
   const handleRefresh = () => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
 import axios from 'axios'; // Import axios for API calls
+import { IP_ADDRESS, PORT } from '@env';
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const [contact, setContact] = useState('');
@@ -11,7 +12,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
   const handleSendCode = async () => {
     try {
       // Send confirmation code to the user's mobile number
-      await axios.post('http://localhost:5000/api/send-confirmation-code', { contact });
+      await axios.post(`http://192.168.1.5:${PORT}/api/send-confirmation-code`, { contact });
       setCodeSent(true);
       Alert.alert('Confirmation code sent!', 'Please check your mobile number.');
 
