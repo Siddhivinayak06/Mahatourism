@@ -8,23 +8,22 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
-const bookingRoutes = require('./routes/bookingRoutes');
+// const bookingRoutes = require('./routes/bookingRoutes');
 const app = express();
 app.use(bodyParser.json());
 app.use(cors());
-app.use('/api', bookingRoutes);
+// app.use('/api', bookingRoutes);
 // Global constants
 const PORT = process.env.PORT;
 const IP_ADDRESS = process.env.IP_ADDRESS;
 
-const userRoutes = require('./routes/userRoutes');
-app.use('/api', userRoutes);
+
 // Database configuration
 const dbConfig = {
-  host: 'localhost',
-  user: 'root',
-  password: 'Omshri#20',
-  database: 'mahatourism1',
+  host: 'sql12.freesqldatabase.com',
+  user: 'sql12774632',
+  password: 'qqsZZK7yWX',
+  database: 'sql12774632',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -55,9 +54,669 @@ const testDatabaseConnection = async () => {
   }
 };
 
-const emailRoutes = require('./routes/email');
-app.use(express.json());
-app.use('/api', emailRoutes);
+app.post('/api/bookings', async (req, res) => {
+  try {
+    // Get the current timestamp for booking_date
+    const bookingDate = new Date().toISOString().split('T')[0];
+    
+    // Extract and sanitize all fields from request body with default values
+    const {
+      booking_id,
+      user_id,
+      package_id,
+      package_name,
+      package_destination = '',  // Provide defaults for optional fields
+      package_duration = '',
+      customer_name,
+      customer_email,
+      customer_phone,
+      travel_date,
+      adults = 1,
+      children = 0,
+      special_requests = 'None',
+      total_price,
+      status = 'confirmed',
+      payment_status = 'unpaid'
+    } = req.body;
+
+    // Validate required fields
+    if (!booking_id || !user_id || !package_id || !package_name || !customer_name || 
+        !customer_email || !customer_phone || !travel_date || !total_price) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required booking information' 
+      });
+    }
+
+    // Format travel date if it's an ISO string
+    let formattedTravelDate;
+    try {
+      formattedTravelDate = new Date(travel_date).toISOString().split('T')[0];
+    } catch (e) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid travel date format'
+      });
+    }
+
+    const query = `
+      INSERT INTO bookings (
+        booking_id, user_id, package_id, package_name, package_destination, 
+        package_duration, customer_name, customer_email, customer_phone,
+        travel_date, adults, children, special_requests, total_price,
+        booking_date, status, payment_status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    // Ensure all parameters are defined before the query
+    const params = [
+      booking_id,
+      user_id,
+      package_id,
+      package_name,
+      package_destination,
+      package_duration,
+      customer_name,
+      customer_email,
+      customer_phone,
+      formattedTravelDate,
+      adults,
+      children,
+      special_requests,
+      total_price,
+      bookingDate,       // Added booking_date parameter
+      status,
+      payment_status
+    ];
+
+    // Log the parameters for debugging
+    console.log('Query parameters:', params);
+    
+    // Check for any undefined values
+    const undefinedParams = params.map((p, i) => p === undefined ? i : null).filter(i => i !== null);
+    if (undefinedParams.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Parameters at positions ${undefinedParams.join(', ')} are undefined`
+      });
+    }
+
+    const [result] = await pool.execute(query, params);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Booking created successfully',
+      data: {
+        id: result.insertId,
+        booking_id
+      }
+    });
+  } catch (error) {
+    console.error('Error creating booking:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create booking',
+      error: error.message
+    });
+  }
+});
+
+// Get all bookings
+app.get('/api/bookings', async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM bookings ORDER BY created_at DESC');
+    return res.status(200).json({
+      success: true,
+      count: rows.length,
+      data: rows
+    });
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bookings',
+      error: error.message
+    });
+  }
+});
+
+// Get booking by ID or booking_id
+app.get('/api/bookings/:bookingId', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'booking ID is required'
+      });
+    }
+    
+    const [rows] = await pool.execute(
+      'SELECT * FROM bookings WHERE booking_id = ?',
+      [bookingId]
+    );
+
+    // Return just the data array as expected by the frontend
+    return res.status(200).json(rows);
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bookings',
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/bookings/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+    
+    const [rows] = await pool.execute(
+      'SELECT * FROM bookings WHERE user_id = ?',
+      [userId]
+    );
+
+    // Return just the data array as expected by the frontend
+    return res.status(200).json(rows);
+  } catch (error) {
+    console.error('Error fetching bookings:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bookings',
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/hotel-bookings/user/:userId', async (req, res) => {
+  const userId = req.params.userId;
+  
+  try {
+    // Join with hotels table to get hotel name
+    const query = `
+      SELECT 
+        hb.id,
+        hb.booking_id,
+        hb.hotel_id,
+        h.name as hotel_name,
+        hb.room_type_id,
+        rt.name as room_type,
+        hb.user_id,
+        hb.guest_name,
+        hb.guest_email,
+        hb.guest_phone,
+        hb.check_in_date,
+        hb.check_out_date,
+        hb.guests_count,
+        hb.total_price,
+        hb.special_requests,
+        hb.payment_method,
+        hb.payment_status,
+        hb.booking_status as status,
+        hb.created_at,
+        hb.updated_at
+      FROM 
+        hotel_bookings hb
+      LEFT JOIN 
+        hotels h ON hb.hotel_id = h.hotel_id
+      LEFT JOIN
+        room_types rt ON hb.room_type_id = rt.id
+      WHERE 
+        hb.user_id = ?
+      ORDER BY 
+        hb.created_at DESC
+    `;
+    
+    const [bookings] = await pool.query(query, [userId]);
+    
+    if (bookings.length === 0) {
+      return res.status(200).json([]);
+    }
+    
+    // Format dates for consistent output
+    const formattedBookings = bookings.map(booking => {
+      return {
+        ...booking,
+        check_in_date: booking.check_in_date ? new Date(booking.check_in_date).toISOString() : null,
+        check_out_date: booking.check_out_date ? new Date(booking.check_out_date).toISOString() : null,
+        created_at: booking.created_at ? new Date(booking.created_at).toISOString() : null,
+        updated_at: booking.updated_at ? new Date(booking.updated_at).toISOString() : null,
+        rooms: booking.guests_count > 1 ? Math.ceil(booking.guests_count / 2) : 1, // Calculate rooms based on guests
+      };
+    });
+    
+    return res.status(200).json(formattedBookings);
+    
+  } catch (error) {
+    console.error('Error fetching hotel bookings:', error);
+    return res.status(500).json({ 
+      status: 'error', 
+      message: 'Failed to fetch hotel bookings',
+      error: error.message 
+    });
+  }
+});
+
+app.get('/api/flight-bookings/user/:userId', async (req, res) => {
+  const userId = req.params.userId;
+  
+  try {
+    // Query flight bookings with detailed information
+    const query = `
+      SELECT 
+        fb.id,
+        fb.user_id,
+        fb.flight_number,
+        fb.airline,
+        fb.departure_airport,
+        fb.departure_code,
+        fb.arrival_airport,
+        fb.arrival_code,
+        fb.departure_time,
+        fb.arrival_time,
+        fb.passengers,
+        fb.amount,
+        fb.booking_date,
+        fb.email,
+        fb.transaction_id,
+        fb.payment_status,
+        fb.created_at,
+        fb.updated_at
+      FROM 
+        flight_bookings fb
+      WHERE 
+        fb.user_id = ?
+      ORDER BY 
+        fb.booking_date DESC
+    `;
+    
+    const [bookings] = await pool.query(query, [userId]);
+    
+    if (bookings.length === 0) {
+      return res.status(200).json([]);
+    }
+    
+    // Format dates and parse JSON data for consistent output
+    const formattedBookings = bookings.map(booking => {
+      // Parse passengers JSON data
+      let parsedPassengers = [];
+      try {
+        if (booking.passengers && typeof booking.passengers === 'string') {
+          parsedPassengers = JSON.parse(booking.passengers);
+        }
+      } catch (err) {
+        console.error('Error parsing passengers data:', err);
+      }
+      
+      // Calculate passenger count
+      const passengerCount = Array.isArray(parsedPassengers) ? parsedPassengers.length : 1;
+      
+      return {
+        ...booking,
+        passengers: parsedPassengers,
+        departure_time: booking.departure_time ? new Date(booking.departure_time).toISOString() : null,
+        arrival_time: booking.arrival_time ? new Date(booking.arrival_time).toISOString() : null,
+        booking_date: booking.booking_date ? new Date(booking.booking_date).toISOString() : null,
+        created_at: booking.created_at ? new Date(booking.created_at).toISOString() : null,
+        updated_at: booking.updated_at ? new Date(booking.updated_at).toISOString() : null,
+        // Additional fields for frontend compatibility
+        status: booking.payment_status ? booking.payment_status.charAt(0).toUpperCase() + booking.payment_status.slice(1) : 'Pending',
+        departure_city: booking.departure_airport || 'Unknown',
+        arrival_city: booking.arrival_airport || 'Unknown',
+        departure_date: booking.departure_time ? new Date(booking.departure_time).toISOString() : null,
+        price: booking.amount,
+        booking_id: booking.id,
+        passenger_count: passengerCount
+      };
+    });
+    
+    return res.status(200).json(formattedBookings);
+    
+  } catch (error) {
+    console.error('Error fetching flight bookings:', error);
+    return res.status(500).json({ 
+      status: 'error', 
+      message: 'Failed to fetch flight bookings',
+      error: error.message 
+    });
+  }
+});
+// Get bookings by customer email
+app.get('/api/bookings/email/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+    
+    const [rows] = await pool.execute(
+      'SELECT * FROM bookings WHERE customer_email = ? ORDER BY created_at DESC',
+      [email]
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: rows.length,
+      data: rows
+    });
+  } catch (error) {
+    console.error('Error fetching bookings by email:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch bookings',
+      error: error.message
+    });
+  }
+});
+
+// Update booking status
+app.patch('/api/bookings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, payment_status } = req.body;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking ID is required'
+      });
+    }
+    
+    let query = 'UPDATE bookings SET ';
+    const queryParams = [];
+    
+    if (status) {
+      query += 'status = ?';
+      queryParams.push(status);
+      
+      if (payment_status) {
+        query += ', payment_status = ?';
+        queryParams.push(payment_status);
+      }
+    } else if (payment_status) {
+      query += 'payment_status = ?';
+      queryParams.push(payment_status);
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'No update parameters provided'
+      });
+    }
+    
+    query += ' WHERE id = ? OR booking_id = ?';
+    queryParams.push(id, id);
+    
+    const [result] = await pool.execute(query, queryParams);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Booking updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating booking:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update booking',
+      error: error.message
+    });
+  }
+});
+
+// Cancel a booking
+app.post('/api/bookings/cancel/:bookingId', async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    
+    if (!bookingId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking ID is required'
+      });
+    }
+    
+    const [result] = await pool.execute(
+      'DELETE FROM bookings WHERE booking_id = ?',
+      [bookingId]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Booking not found'
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Booking deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting booking:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete booking',
+      error: error.message
+    });
+  }
+});
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'mahatourismteam@gmail.com',
+    pass: 'rbyw izcu uvuq hupj'
+  }
+});
+async function generateFlightTicketPDF(bookingDetails) {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: 'A4', margin: 50 });
+      const fileName = `flight_ticket_${bookingDetails.transactionId}.pdf`;
+      const filePath = `${__dirname}/../temp/${fileName}`;
+      
+      // Ensure temp directory exists
+      if (!fs.existsSync(`${__dirname}/../temp`)) {
+        fs.mkdirSync(`${__dirname}/../temp`);
+      }
+
+      const stream = fs.createWriteStream(filePath);
+      doc.pipe(stream);
+
+      // Add content to PDF
+      doc.fontSize(20).text('Flight Booking Confirmation', { align: 'center' });
+      doc.moveDown();
+      
+      // Flight details
+      doc.fontSize(14).text(`Flight: ${bookingDetails.flightNumber}`, { continued: true })
+         .text(`Airline: ${bookingDetails.airline}`, { align: 'right' });
+      
+      doc.moveDown();
+      doc.text(`From: ${bookingDetails.departure}`, { continued: true })
+         .text(`To: ${bookingDetails.arrival}`, { align: 'right' });
+      
+      doc.moveDown();
+      doc.text(`Date: ${bookingDetails.date}`, { continued: true })
+         .text(`Passengers: ${bookingDetails.passengers.length}`, { align: 'right' });
+      
+      doc.moveDown(2);
+      doc.fontSize(16).text('Passenger Details', { underline: true });
+      bookingDetails.passengers.forEach((passenger, index) => {
+        doc.moveDown();
+        doc.text(`${index + 1}. ${passenger.name} (${passenger.type})`);
+      });
+
+      doc.moveDown(2);
+      doc.fontSize(16).text('Payment Details', { underline: true });
+      doc.moveDown();
+      doc.text(`Amount: ₹${bookingDetails.amount.toLocaleString('en-IN')}`);
+      doc.text(`Transaction ID: ${bookingDetails.transactionId}`);
+      doc.text(`Status: ${bookingDetails.status || 'Confirmed'}`);
+
+      doc.moveDown(2);
+      doc.fontSize(12).text('Thank you for booking with us!', { align: 'center' });
+      doc.text('For any queries, contact support@mahatourism.com', { align: 'center' });
+
+      doc.end();
+
+      stream.on('finish', () => resolve(filePath));
+      stream.on('error', reject);
+    } catch (err) {
+      reject(err);
+    }
+  });
+};
+
+app.post('/api/send-confirmation-email', async (req, res) => {
+  try {
+    const { to, name, bookingId, packageName, travelDate, totalPrice } = req.body;
+    
+    if (!to || !name || !bookingId || !packageName || !travelDate || !totalPrice) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields for email' 
+      });
+    }
+    
+    const mailOptions = {
+      from: 'mahatourismteam@gmail.com',
+      to: to,
+      subject: `Booking Confirmation - ${bookingId}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+          <div style="text-align: center; padding: 20px 0;">
+            <h1 style="color: #FF5722;">Package Booking Confirmation</h1>
+          </div>
+          
+          <div style="padding: 20px; background-color: #f9f9f9; border-radius: 5px;">
+            <p style="margin-bottom: 20px;">Dear <strong>${name}</strong>,</p>
+            
+            <p>Thank you for booking with us! Your travel package has been confirmed. Below are your booking details:</p>
+            
+            <div style="margin: 20px 0; padding: 15px; background-color: #fff; border-radius: 5px; border-left: 4px solid #FF5722;">
+              <p><strong>Booking ID:</strong> ${bookingId}</p>
+              <p><strong>Package:</strong> ${packageName}</p>
+              <p><strong>Travel Date:</strong> ${travelDate}</p>
+              <p><strong>Total Amount:</strong> ₹${totalPrice}</p>
+            </div>
+            
+            <p>You can view your complete booking details by logging into your account on our website or mobile app.</p>
+            
+            <p style="margin-top: 30px;">If you have any questions or need assistance, please don't hesitate to contact our customer support team at <a href="mailto:mahatourismteam@gmail.com" style="color: #FF5722;">mahatourismteam@gmail.com</a></p>
+          </div>
+        </div>
+      `
+    };
+    
+    await transporter.sendMail(mailOptions);
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Package confirmation email sent successfully' 
+    });
+    
+  } catch (error) {
+    console.error('Email sending error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to send confirmation email',
+      error: error.message 
+    });
+  }
+});
+
+// New flight ticket endpoint
+app.post('/api/send-flight-ticket', async (req, res) => {
+  try {
+    const { email, bookingDetails } = req.body;
+
+    if (!email || !bookingDetails) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email and booking details are required' 
+      });
+    }
+
+    // Generate PDF
+    const pdfPath = await generateFlightTicketPDF(bookingDetails);
+
+    // Send email
+    const mailOptions = {
+      from: 'mahatourismteam@gmail.com',
+      to: email,
+      subject: `Your Flight Ticket - ${bookingDetails.flightNumber}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+          <div style="text-align: center; padding: 20px 0;">
+            <h1 style="color: #FF5722;">Flight Booking Confirmation</h1>
+          </div>
+          
+          <div style="padding: 20px; background-color: #f9f9f9; border-radius: 5px;">
+            <p>Dear Customer,</p>
+            
+            <p>Thank you for booking with us. Here are your flight details:</p>
+            
+            <div style="margin: 20px 0; padding: 15px; background-color: #fff; border-radius: 5px; border-left: 4px solid #FF5722;">
+              <p><strong>Flight:</strong> ${bookingDetails.flightNumber}</p>
+              <p><strong>Airline:</strong> ${bookingDetails.airline}</p>
+              <p><strong>From:</strong> ${bookingDetails.departure}</p>
+              <p><strong>To:</strong> ${bookingDetails.arrival}</p>
+              <p><strong>Date:</strong> ${bookingDetails.date}</p>
+              <p><strong>Passengers:</strong> ${bookingDetails.passengers.length}</p>
+              <p><strong>Amount Paid:</strong> ₹${bookingDetails.amount.toLocaleString('en-IN')}</p>
+            </div>
+            
+            <p>Your ticket is attached to this email. Please present it at the airport.</p>
+            
+            <p style="margin-top: 30px;">For any queries, contact <a href="mailto:mahatourismteam@gmail.com" style="color: #FF5722;">mahatourismteam@gmail.com</a></p>
+          </div>
+        </div>
+      `,
+      attachments: [{
+        filename: `flight_ticket_${bookingDetails.transactionId}.pdf`,
+        path: pdfPath
+      }]
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    // Clean up
+    fs.unlinkSync(pdfPath);
+
+    res.status(200).json({ 
+      success: true, 
+      message: 'Flight ticket sent successfully' 
+    });
+
+  } catch (error) {
+    console.error('Error sending flight ticket:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to send flight ticket',
+      error: error.message 
+    });
+  }
+});
+
 
 // USER AUTHENTICATION ROUTES
 app.post('/api/login', async (req, res) => {
@@ -955,14 +1614,7 @@ app.delete('/api/destinations/:id', async (req, res) => {
   }
 });
 
-// Configure email transporter
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+
 
 // API endpoint to save flight booking
 app.post('/save-booking', async (req, res) => {
@@ -1165,6 +1817,130 @@ MahaTourism Team
     });
   }
 });
+
+app.get('/api/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+    
+    const [rows] = await pool.execute(
+      'SELECT user_id, first_name,last_name, email, phone_number, address, city, state, zip_code FROM users WHERE user_id = ?',
+      [userId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    return res.status(200).json(rows[0]);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user',
+      error: error.message
+    });
+  }
+});
+app.put('/api/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { first_name,last_name, email, mobile, address, city, state, zip_code } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+    
+    await pool.execute(
+      'UPDATE users SET first_name = ?,last_name = ?, email = ?, phone_number = ?, address = ?, city = ?, state = ?, zip_code = ? WHERE user_id = ?',
+      [first_name,last_name, email, mobile, address || null, city || null, state || null, zip_code || null, userId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'User updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update user',
+      error: error.message
+    });
+  }
+});
+app.delete('/api/users/:userId',async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
+      });
+    }
+    
+    // Start a transaction for data consistency
+    const connection = await pool.getConnection();
+    await connection.beginTransaction();
+    
+    try {
+      
+      // Finally, delete the user from users table
+      const [result] = await connection.execute(
+        'DELETE FROM users WHERE user_id = ?',
+        [userId]
+      );
+      
+      if (result.affectedRows === 0) {
+        // Rollback the transaction if user not found
+        await connection.rollback();
+        connection.release();
+        
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+      
+      // Commit the transaction if everything succeeded
+      await connection.commit();
+      connection.release();
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Account deleted successfully'
+      });
+      
+    } catch (error) {
+      // Rollback the transaction in case of any error
+      await connection.rollback();
+      connection.release();
+      throw error;
+    }
+    
+  } catch (error) {
+    console.error('Error deleting user account:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete account',
+      error: error.message
+    });
+  }
+});
+
 
 // Initialize the application
 const startServer = async () => {
