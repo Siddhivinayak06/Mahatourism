@@ -524,7 +524,7 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'mahatourismteam@gmail.com',
-    pass: 'rbyw izcu uvuq hupj'
+    pass: 'lvql maev qgnv gcxy'
   }
 });
 async function generateFlightTicketPDF(bookingDetails) {
