@@ -936,6 +936,7 @@ app.get('/api/hotels/search', async (req, res) => {
 app.post('/api/hotel-bookings', async (req, res) => {
   try {
     const { 
+      booking_id,
       hotel_id, 
       room_type_id, 
       user_id,
@@ -951,7 +952,7 @@ app.post('/api/hotel-bookings', async (req, res) => {
     } = req.body;
     
     // Validate required fields
-    if (!hotel_id || !room_type_id || !user_id || !guest_name || !guest_email || 
+    if (!booking_id || !hotel_id || !room_type_id || !user_id || !guest_name || !guest_email || 
         !check_in_date || !check_out_date || !guests_count || !total_price || !payment_method) {
       return res.status(400).json({ error: 'Missing required booking information' });
     }
@@ -959,10 +960,10 @@ app.post('/api/hotel-bookings', async (req, res) => {
     // Insert the booking into database
     const result = await executeQuery(
       `INSERT INTO hotel_bookings 
-       (hotel_id, room_type_id,user_id, guest_name, guest_email, guest_phone, 
+       (booking_id, hotel_id, room_type_id,user_id, guest_name, guest_email, guest_phone, 
         check_in_date, check_out_date, guests_count, total_price, special_requests,payment_method)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [hotel_id, room_type_id,user_id, guest_name, guest_email, guest_phone, 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [booking_id, hotel_id, room_type_id,user_id, guest_name, guest_email, guest_phone, 
        check_in_date, check_out_date, guests_count, total_price, special_requests, payment_method || null]
     );
     
@@ -975,6 +976,7 @@ app.post('/api/hotel-bookings', async (req, res) => {
     res.status(500).json({ error: 'Failed to create booking' });
   }
 });
+  
 // Get hotel by ID
 app.get('/api/hotels/:id', async (req, res) => {
   try {
