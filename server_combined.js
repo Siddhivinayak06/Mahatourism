@@ -1254,7 +1254,7 @@ app.get('/api/packages', async (req, res) => {
         (SELECT pi.image_url 
          FROM package_images pi 
          WHERE pi.package_id = p.id  
-         LIMIT 1) as thumbnailUrl
+         LIMIT 1) as image_url
       FROM packages p
     `);
 
