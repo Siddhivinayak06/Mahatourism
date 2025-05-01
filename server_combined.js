@@ -21,9 +21,9 @@ const IP_ADDRESS = process.env.IP_ADDRESS;
 // Database configuration
 const dbConfig = {
   host: 'sql12.freesqldatabase.com',
-  user: 'sql12776228',
-  password: 'ZF3mNIu2FR',
-  database: 'sql12776228',
+  user: 'sql12776306',
+  password: 'unJvcacTZJ',
+  database: 'sql12776306',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
