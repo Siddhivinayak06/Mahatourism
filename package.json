@@ -26,6 +26,7 @@
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
     "expo": "^53.0.6",
     "expo-auth-session": "~6.1.5",
     "expo-linear-gradient": "~14.1.4",
@@ -53,7 +54,8 @@
     "react-native-modal-datetime-picker": "^18.0.0",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.10.0",
-    "react-native-web": "0.20.0"
+    "react-native-web": "0.20.0",
+    "twilio": "^4.25.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
