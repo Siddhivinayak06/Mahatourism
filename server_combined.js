@@ -18,12 +18,11 @@ const PORT = process.env.PORT;
 const IP_ADDRESS = process.env.IP_ADDRESS;
 
 
-// Database configuration
 const dbConfig = {
-  host: 'sql12.freesqldatabase.com',
-  user: 'sql12776228',
-  password: 'ZF3mNlu2FR',
-  database: 'sql12776228',
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
