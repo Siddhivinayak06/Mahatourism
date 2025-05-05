@@ -27,7 +27,7 @@ const RegisterScreen = ({ navigation }) => {
 
     try {
       // my device: 192.168.193.247
-      const response = await axios.post(`http://192.168.1.6:${PORT}/api/register`, {
+      const response = await axios.post(`https://mahatourism.onrender.com/api/register`, {
         firstName,
         lastName,
         email,

@@ -46,9 +46,9 @@ const FlightBooking = () => {
   const fetchBookings = async (userId) => {
     try {
       console.log('Fetching bookings for user:', userId);
-      console.log('API endpoint:', `http://192.168.1.6:${PORT}/user-bookings/${userId}`);
+      console.log('API endpoint:', `https://mahatourism.onrender.com/user-bookings/${userId}`);
       
-      const response = await fetch(`http://192.168.1.6:${PORT}/user-bookings/${userId}`);
+      const response = await fetch(`https://mahatourism.onrender.com/user-bookings/${userId}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch bookings: ${response.status}`);

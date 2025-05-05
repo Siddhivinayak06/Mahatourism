@@ -16,7 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import COLORS from '../../consts/colors';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://192.168.1.6:5000/api';
+const API_BASE_URL = 'https://mahatourism.onrender.com/api';
 
 const ProfileScreen = ({ route, navigation }) => {
   const { userId, userFullName, userEmail, userMobile } = route.params || {};

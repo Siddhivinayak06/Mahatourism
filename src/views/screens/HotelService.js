@@ -1,8 +1,8 @@
 import axios from 'axios';
-const API_CONFIG = 'http://192.168.1.5:5000';
+
 // Create an axios instance with default configuration
 const apiClient = axios.create({
-  baseURL: 'http://192.168.1.6:5000',
+  baseURL: 'https://mahatourism.onrender.com',
   timeout: 10000, // 10 seconds timeout
   headers: {
     'Content-Type': 'application/json',
@@ -108,7 +108,9 @@ export const getHotelReviews = async (hotelId) => {
 };
 export const createBooking = async (bookingData) => {
   try {
+    const bookingId = `BK-${Date.now().toString().slice(-6)}`;
     const response = await apiClient.post(`/api/hotel-bookings`, {
+      booking_id:bookingId,
       hotel_id: bookingData.hotel_id,
       room_type_id: bookingData.room_id,
       user_id: bookingData.user_id,  // Add user_id to the request

@@ -17,12 +17,12 @@ import { useRoute } from '@react-navigation/native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { IP_ADDRESS, PORT } from '@env';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // Get window dimensions
 const { width } = Dimensions.get('window');
 
 // Base API URL - replace with your actual backend URL
-const BASE_API_URL = `http://192.168.1.6:${PORT}/api`;
+const BASE_API_URL = `https://mahatourism.onrender.com/api`;
 
 const ItineraryDay = ({ day, isExpanded, onToggle }) => {
   // Ensure day.activities is an array
@@ -220,7 +220,7 @@ const fetchPackageDetails = async (packageId) => {
 
 const PackageDetailScreen = () => {
   const route = useRoute();
-  const { packageId, userId, userFullName, userEmail, userMobile} = route.params || {};
+  const { packageId, userFullName, userEmail, userMobile} = route.params || {};
   const [packageDetails, setPackageDetails] = useState({
     images: [],
     inclusions: [],
@@ -239,6 +239,23 @@ const PackageDetailScreen = () => {
     duration_days: 0,
     description: ''
   });
+
+  const [userId, setUserId] = useState(null);
+  useEffect(() => {
+    const getUserData = async () => {
+      try {
+        const userId= await AsyncStorage.getItem('userId');
+        console.log(userId)
+        setUserId(userId);
+        
+      } catch (err) {
+        console.error('Error retrieving user data:', err);
+        setError({...error, general: 'Failed to retrieve user information.'});
+      }
+    };
+    
+    getUserData();
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [expandedDayIndex, setExpandedDayIndex] = useState(0);
@@ -460,7 +477,7 @@ const PackageDetailScreen = () => {
         
         <View style={styles.footerContainer}>
           <TouchableOpacity style={styles.fullWidthButton}>
-            <Text style={styles.fullWidthButtonText}  onPress={() => navigation.navigate('BookingScreen', { packageId: packageId },{ packageDetails: packageDetails })}>Book This Package</Text>
+            <Text style={styles.fullWidthButtonText}  onPress={() => navigation.navigate('BookingScreen', { packageId, userId, userFullName,userEmail,userMobile  },{ packageDetails: packageDetails })}>Book This Package</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

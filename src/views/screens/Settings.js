@@ -17,7 +17,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import COLORS from '../../consts/colors';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const API_BASE_URL = 'http://192.168.1.6:5000/api';
+const API_BASE_URL = 'https://mahatourism.onrender.com/api';
 
 const Settings = ({ route, navigation }) => {
   const [userId,setUserId] = useState(null);

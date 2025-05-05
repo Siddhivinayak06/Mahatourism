@@ -20,7 +20,7 @@ import { Picker } from '@react-native-picker/picker';
 import axios from 'axios';
 import { IP_ADDRESS, PORT } from '@env';
 
-const BASE_API_URL = `http://192.168.1.6:${PORT}/api`;
+const BASE_API_URL = `https://mahatourism.onrender.com/api`;
 
 const fetchPackageDetails = async (packageId) => {
   try {

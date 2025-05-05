@@ -179,7 +179,7 @@ const PaymentScreen = ({ route }) => {
       console.log('Sending booking data:', bookingData);
       
       // Make the actual API call - check if your backend URL is correct
-      const response = await axios.post('http://192.168.1.6:5000/save-booking', bookingData);
+      const response = await axios.post('https://mahatourism.onrender.com/save-booking', bookingData);
       
       console.log('API response:', response.data);
       

@@ -17,7 +17,7 @@ import { IP_ADDRESS, PORT } from '@env';
 
 
 // Replace with your actual API endpoint
-const API_URL = `http://192.168.1.5:${PORT}`;
+const API_URL = `http://192.168.240.17:${PORT}`;
 
 // Helper function to get icon for category
 const getCategoryIcon = (category) => {
@@ -59,7 +59,7 @@ const TourPackagePage = () => {
   const fetchItinerary = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://192.168.1.5:${PORT}/api/itinerary`, {
+      const response = await axios.get(`https://mahatourism.onrender.com/api/itinerary`, {
         timeout: 10000, // 10 seconds
       });
       if (response.data) {

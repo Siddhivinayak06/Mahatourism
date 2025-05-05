@@ -14,7 +14,7 @@ import COLORS from '../../consts/colors';
 import axios from 'axios';
 import { IP_ADDRESS, PORT } from '@env';
 
-const BASE_URL = `http://192.168.1.5:${PORT}/api`;
+const BASE_URL = `https://mahatourism.onrender.com/api`;
 const DestinationDetails = ({ route, navigation }) => {
   const [destination, setDestination] = useState(null);
   const [loading, setLoading] = useState(true);

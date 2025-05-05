@@ -59,7 +59,7 @@ const ItineraryDetailsPage = () => {
       setLoading(true);
       console.log(`Fetching details for itinerary ID: ${itineraryId}`); // Debug log
       
-      const response = await axios.get(`http://192.168.1.5:5000/api/itinerary/detail/${itineraryId}`, {
+      const response = await axios.get(`https://mahatourism.onrender.com/api/itinerary/detail/${itineraryId}`, {
         timeout: 10000,
       });
       
@@ -100,7 +100,7 @@ const ItineraryDetailsPage = () => {
   const handleBookNow = async () => {
     try {
       // Replace with your actual booking API endpoint
-      const response = await axios.post('http://192.168.1.5:5000/api/bookings', {
+      const response = await axios.post('https://mahatourism.onrender.com/api/bookings', {
         itineraryId,
         bookingDate,
         participants,

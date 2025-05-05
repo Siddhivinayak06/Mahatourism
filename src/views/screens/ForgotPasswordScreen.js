@@ -12,7 +12,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
   const handleSendCode = async () => {
     try {
       // Send confirmation code to the user's mobile number
-      await axios.post(`http://192.168.1.5:${PORT}/api/send-confirmation-code`, { contact });
+      await axios.post(`https://mahatourism.onrender.com/api/send-confirmation-code`, { contact });
       setCodeSent(true);
       Alert.alert('Confirmation code sent!', 'Please check your mobile number.');
 

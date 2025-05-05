@@ -16,7 +16,7 @@ import axios from 'axios';
 import { IP_ADDRESS, PORT } from '@env';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-const API_BASE_URL = `http://192.168.1.6:${PORT}/api`;
+const API_BASE_URL = `https://mahatourism.onrender.com/api`;
 
 const Bookings = ({ route, navigation }) => {
   const [bookings, setBookings] = useState({

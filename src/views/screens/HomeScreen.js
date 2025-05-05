@@ -19,7 +19,7 @@ import COLORS from '../../consts/colors';
 import axios from 'axios';
 import { IP_ADDRESS, PORT } from '@env';
 const { width } = Dimensions.get('screen');
-const API_BASE_URL = `http://192.168.1.6:${PORT}/api`; // Replace with your actual API endpoint
+const API_BASE_URL = `https://mahatourism.onrender.com/api`; // Replace with your actual API endpoint
 
 const HomeScreen = ({ route, navigation }) => {
   const [destinations, setDestinations] = useState([]);

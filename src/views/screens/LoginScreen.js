@@ -75,7 +75,7 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post(`http://192.168.1.6:${PORT}/api/login`, {
+      const response = await axios.post(`https://mahatourism.onrender.com/api/login`, {
         mobileNumber,
         password,
       });

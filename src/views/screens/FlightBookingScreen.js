@@ -30,7 +30,7 @@ const FlightBookingScreen = () => {
 
   const fetchAirports = async () => {
     try {
-      const response = await axios.get('http://192.168.1.6:5000/api/airports');
+      const response = await axios.get('https://mahatourism.onrender.com/api/airports');
       setPopularCities(response.data);
     } catch (error) {
       console.error('Error fetching airport data:', error);
@@ -41,7 +41,7 @@ const FlightBookingScreen = () => {
     try {
       const response = await axios.get(`http://api.aviationstack.com/v1/flights`, {
         params: {
-          access_key: '137439d6a83f0a8d8793d96a5484b4c2',
+          access_key: '85f32754beba735ab64c141d5e782441',
           dep_iata: from,
           arr_iata: to,
           dep_date: departureDate.toISOString().split('T')[0],

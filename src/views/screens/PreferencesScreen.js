@@ -9,13 +9,13 @@ import {
   ActivityIndicator,
   StatusBar,
   SafeAreaView,
-  Image
+  Alert
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Slider from '@react-native-community/slider';
-import { Picker } from '@react-native-picker/picker';
-import { generateTravelPlan } from '../../services/aiServices';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { generateTravelPlan, generateItinerary } from '../../services/aiServices';
+import NetInfo from '@react-native-community/netinfo';
 
 // Define colors object for consistent styling
 const COLORS = {
@@ -39,6 +39,7 @@ const PreferencesScreen = ({ navigation }) => {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState('');
   
   const availableInterests = [
     'History', 'Art', 'Food', 'Nature', 'Adventure', 
@@ -61,13 +62,47 @@ const PreferencesScreen = ({ navigation }) => {
     });
   };
 
+  const validatePreferences = () => {
+    if (!destination.trim()) {
+      Alert.alert('Missing Information', 'Please enter a destination');
+      return false;
+    }
+    
+    if (interests.length === 0) {
+      Alert.alert('Missing Information', 'Please select at least one interest');
+      return false;
+    }
+    
+    if (endDate <= startDate) {
+      Alert.alert('Invalid Dates', 'End date must be after start date');
+      return false;
+    }
+    
+    return true;
+  };
+
+  const checkConnection = async () => {
+    const netInfo = await NetInfo.fetch();
+    return netInfo.isConnected;
+  };
+
   const handleGeneratePlan = async () => {
-    if (!destination) {
-      alert('Please enter a destination');
+    if (!validatePreferences()) {
+      return;
+    }
+    
+    const isConnected = await checkConnection();
+    if (!isConnected) {
+      Alert.alert(
+        'No Internet Connection',
+        'An internet connection is required to generate travel plans with AI. Please check your connection and try again.',
+        [{ text: 'OK' }]
+      );
       return;
     }
     
     setLoading(true);
+    setLoadingProgress('Analyzing travel preferences...');
     
     const preferences = {
       destination,
@@ -79,13 +114,29 @@ const PreferencesScreen = ({ navigation }) => {
     };
     
     try {
+      // Step 1: Generate travel recommendations
+      setLoadingProgress('Creating personalized recommendations...');
       const recommendations = await generateTravelPlan(preferences);
+      
+      // Step 2: Generate detailed itinerary based on recommendations
+      setLoadingProgress('Building your detailed itinerary...');
+      const itinerary = await generateItinerary(preferences, recommendations);
+      
+      // Step 3: Navigate to results screen with all data
       setLoading(false);
-      navigation.navigate('ResultsScreen', { recommendations, preferences });
+      navigation.navigate('ResultsScreen', { 
+        recommendations, 
+        preferences,
+        itinerary 
+      });
     } catch (error) {
       setLoading(false);
-      alert('Failed to generate travel plan. Please try again.');
-      console.error(error);
+      Alert.alert(
+        'Error',
+        'There was a problem generating your travel plan. Please try again later.',
+        [{ text: 'OK' }]
+      );
+      console.error('Error in travel plan generation:', error);
     }
   };
 
@@ -145,6 +196,12 @@ const PreferencesScreen = ({ navigation }) => {
                 setShowStartDatePicker(false);
                 if (selectedDate) {
                   setStartDate(selectedDate);
+                  // Ensure end date is at least one day after start date
+                  if (selectedDate >= endDate) {
+                    const newEndDate = new Date(selectedDate);
+                    newEndDate.setDate(selectedDate.getDate() + 1);
+                    setEndDate(newEndDate);
+                  }
                 }
               }}
               minimumDate={new Date()}
@@ -170,9 +227,9 @@ const PreferencesScreen = ({ navigation }) => {
         <View style={styles.card}>
           <Text style={styles.label}>Budget (₹)</Text>
           <View style={styles.budgetContainer}>
-            <Text style={styles.budgetText}>₹{budget}</Text>
+            <Text style={styles.budgetText}>₹{budget.toLocaleString()}</Text>
             <View style={styles.sliderContainer}>
-              <Text style={styles.sliderLabel}>₹1000</Text>
+              <Text style={styles.sliderLabel}>₹1,000</Text>
               <Slider
                 style={styles.slider}
                 minimumValue={1000}
@@ -184,7 +241,7 @@ const PreferencesScreen = ({ navigation }) => {
                 maximumTrackTintColor={COLORS.lightGray}
                 thumbTintColor={COLORS.primary}
               />
-              <Text style={styles.sliderLabel}>₹10,0000</Text>
+              <Text style={styles.sliderLabel}>₹1,00,000</Text>
             </View>
           </View>
           
@@ -195,7 +252,7 @@ const PreferencesScreen = ({ navigation }) => {
               onPress={() => setTravelStyle('budget')}
             >
               <Icon 
-                name="currency-rupee" 
+                name="account-balance-wallet" 
                 size={20} 
                 color={travelStyle === 'budget' ? COLORS.white : COLORS.primary} 
               />
@@ -265,7 +322,10 @@ const PreferencesScreen = ({ navigation }) => {
           activeOpacity={0.8}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color="#fff" size="small" />
+              <Text style={styles.loadingText}>{loadingProgress}</Text>
+            </View>
           ) : (
             <>
               <Icon name="explore" size={22} color={COLORS.white} style={{ marginRight: 8 }} />
@@ -273,6 +333,12 @@ const PreferencesScreen = ({ navigation }) => {
             </>
           )}
         </TouchableOpacity>
+        
+        {loading && (
+          <Text style={styles.aiDisclaimer}>
+            AI is analyzing your preferences and creating a personalized plan. This may take a minute...
+          </Text>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -467,7 +533,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
-    marginBottom: 32,
+    marginBottom: 16,
     shadowColor: COLORS.primary,
     shadowOffset: {
       width: 0,
@@ -481,6 +547,22 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: COLORS.white,
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  aiDisclaimer: {
+    textAlign: 'center',
+    color: COLORS.gray,
+    fontSize: 12,
+    marginBottom: 32,
+    fontStyle: 'italic',
   },
 });
 

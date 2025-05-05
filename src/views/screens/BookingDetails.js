@@ -15,7 +15,7 @@ import COLORS from '../../consts/colors';
 import axios from 'axios';
 import { IP_ADDRESS, PORT } from '@env';
 
-const API_BASE_URL = `http://192.168.1.6:${PORT}/api`;
+const API_BASE_URL = `https://mahatourism.onrender.com/api`;
 
 const BookingDetails = ({ route, navigation }) => {
   const [booking, setBooking] = useState(null);
@@ -282,12 +282,12 @@ const BookingDetails = ({ route, navigation }) => {
               <Icon name="child-care" size={20} color={COLORS.primary} />
             )}
             {renderDetailItem(
-              'Lead Traveler', 
+              'Guide', 
               booking.lead_traveler_name || 'Amit Singh',
               <Icon name="account-circle" size={20} color={COLORS.primary} />
             )}
             {renderDetailItem(
-              'Contact', 
+              'Guide Contact', 
               booking.contact_number || '+91 9906690319',
               <Icon name="phone" size={20} color={COLORS.primary} />
             )}
