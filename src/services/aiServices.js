@@ -3,7 +3,7 @@
 import axios from 'axios';
 
 // Replace with your actual Gemini API key
-const API_KEY = 'AIzaSyBT2kXenXEkuBLH1NPvm9z81Fso0s2u4Qk';
+const API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent';
 
 export const generateTravelPlan = async (preferences) => {
