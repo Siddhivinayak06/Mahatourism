@@ -10,11 +10,12 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@expo/metro-runtime": "~4.0.1",
-    "@react-native-async-storage/async-storage": "^2.1.1",
-    "@react-native-community/datetimepicker": "8.2.0",
-    "@react-native-community/slider": "4.5.5",
-    "@react-native-picker/picker": "2.9.0",
+    "@expo/metro-runtime": "~5.0.4",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-community/datetimepicker": "8.3.0",
+    "@react-native-community/netinfo": "^11.4.1",
+    "@react-native-community/slider": "4.5.6",
+    "@react-native-picker/picker": "2.11.0",
     "@react-navigation/drawer": "^7.3.8",
     "@react-navigation/native": "^7.1.6",
     "@react-navigation/native-stack": "^7.2.0",
@@ -25,13 +26,16 @@
     "bcryptjs": "^2.4.3",
     "compression": "^1.8.0",
     "cors": "^2.8.5",
-    "expo": "~52.0.28",
-    "expo-auth-session": "^6.0.3",
-    "expo-location": "^18.0.5",
+    "expo": "^53.0.6",
+    "expo-auth-session": "~6.1.5",
+    "expo-linear-gradient": "~14.1.4",
+    "expo-location": "~18.1.4",
     "expo-permissions": "^14.4.0",
-    "expo-status-bar": "~2.0.1",
+    "expo-status-bar": "~2.2.3",
+    "expo-updates": "~0.28.12",
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
+    "fs-extra": "^11.3.0",
     "helmet": "^8.1.0",
     "html-pdf-node": "^1.0.8",
     "jsonwebtoken": "^9.0.2",
@@ -40,23 +44,26 @@
     "node-cache": "^5.1.2",
     "nodemailer": "^6.10.0",
     "pdfkit": "^0.16.0",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "react-native": "0.76.6",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-native": "0.79.2",
     "react-native-dotenv": "^3.4.11",
-    "react-native-gesture-handler": "~2.20.2",
+    "react-native-gesture-handler": "~2.24.0",
     "react-native-linear-gradient": "^2.8.3",
     "react-native-modal-datetime-picker": "^18.0.0",
-    "react-native-safe-area-context": "4.12.0",
-    "react-native-screens": "~4.4.0",
-    "react-native-web": "~0.19.13",
-    "twilio": "^5.4.3",
-    "expo-linear-gradient": "~14.0.2"
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.10.0",
+    "react-native-web": "0.20.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
-    "babel-preset-expo": "^12.0.11",
+    "babel-preset-expo": "~13.0.0",
     "metro-react-native-babel-preset": "^0.77.0"
+  },
+  "expo": {
+    "install": {
+      "exclude": ["react-native-modal-datetime-picker"]
+    }
   },
   "private": true
 }

@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "app",
-    "slug": "app",
+    "name": "MahaTourism",
+    "slug": "MahaTourism",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/MahaTourism.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/welcome.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#FFCF9D"
     },
     "ios": {
       "supportsTablet": true
@@ -23,6 +23,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "afd79395-1dc2-4488-a3e1-5f62bc6c0203"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/afd79395-1dc2-4488-a3e1-5f62bc6c0203"
     }
   }
 }

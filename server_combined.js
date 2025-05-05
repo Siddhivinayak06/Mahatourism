@@ -21,9 +21,9 @@ const IP_ADDRESS = process.env.IP_ADDRESS;
 // Database configuration
 const dbConfig = {
   host: 'sql12.freesqldatabase.com',
-  user: 'sql12776306',
-  password: 'unJvcacTZJ',
-  database: 'sql12776306',
+  user: 'sql12774632',
+  password: 'qqsZZK7yWX',
+  database: 'sql12774632',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -524,7 +524,7 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'mahatourismteam@gmail.com',
-    pass: 'lvql maev qgnv gcxy'
+    pass: 'rbyw izcu uvuq hupj'
   }
 });
 async function generateFlightTicketPDF(bookingDetails) {
@@ -976,7 +976,6 @@ app.post('/api/hotel-bookings', async (req, res) => {
     res.status(500).json({ error: 'Failed to create booking' });
   }
 });
-  
 // Get hotel by ID
 app.get('/api/hotels/:id', async (req, res) => {
   try {
@@ -1254,7 +1253,7 @@ app.get('/api/packages', async (req, res) => {
         (SELECT pi.image_url 
          FROM package_images pi 
          WHERE pi.package_id = p.id  
-         LIMIT 1) as image_url
+         LIMIT 1) as thumbnailUrl
       FROM packages p
     `);
 
