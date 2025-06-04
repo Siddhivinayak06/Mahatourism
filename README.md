@@ -1,8 +1,8 @@
 ---
 
-# ✈️ MahTurism – Smart Travel Companion
+# ✈️ MahaTourism – Smart Travel Companion
 
-MahTurism is a cross-platform mobile app built with **Expo** that allows users to seamlessly book **flights**, **hotels**, and **travel packages** all in one place. It also features an integrated **AI-powered itinerary planner** that customizes travel plans based on the user's preferences, making travel planning smarter and easier than ever before.
+MahaTourism is a cross-platform mobile app built with **Expo** that allows users to seamlessly book **flights**, **hotels**, and **travel packages** all in one place. It also features an integrated **AI-powered itinerary planner** that customizes travel plans based on the user's preferences, making travel planning smarter and easier than ever before.
 
 ---
 
@@ -50,7 +50,7 @@ Clone the repo:
 
 ```bash
 git clone https://github.com/Siddhivinayak06/Mahatourism.git
-cd mahturism-app
+cd mahatourism-app
 npm install
 npx expo start
 ```
